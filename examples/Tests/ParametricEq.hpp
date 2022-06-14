@@ -3,7 +3,8 @@
 #include <vector>
 #include <string>
 #include <DspFilters/Filter.h>
-#include <DspFilters/RBJ.h>
+#include <DspFilters/Butterworth.h>
+#include <iostream>
 
 namespace examples
 {
@@ -37,20 +38,61 @@ struct ParametricEq
             };
 
             float value;
-        } lowpassCutoffFreq, highpassCutoffFreq, bandpassCutoffFreq ; 
+        } lowpassCutoffFreq, highpassCutoffFreq;//, bandpassCutoffFreq ; 
+
         struct 
         {
-            static constexpr auto name() { return "Q"; }
+            static constexpr auto name() { return "Center Frequency"; }
             enum widget { knob };
             struct range
             {
                 const float min = 0.;
-                const float max = 1.2;
-                const float init = .6;
+                const float max = 22000.;
+                const float init = 0.;
             };
 
             float value;
-        } lowpassQ, highpassQ, bandpassQ ;
+        } bandpassCenterFreq;
+
+        struct 
+        {
+            static constexpr auto name() { return "Frequency Band Width"; }
+            enum widget { knob };
+            struct range
+            {
+                const float min = 0.;
+                const float max = 1000.;
+                const float init = 100.;
+            };
+
+            float value;
+        } bandpassBandWidth;
+
+        struct order
+        {
+            static constexpr auto name() { return  "Filter Order"; }
+            static constexpr auto maxOrder = 4 ;
+            struct range
+            {
+                const int min = 1;
+                const int max = maxOrder;
+                const int init = 1;
+            };
+            int value;
+        } lowpassOrder, highpassOrder, bandpassOrder;
+        // struct 
+        // {
+        //     static constexpr auto name() { return "Q"; }
+        //     enum widget { knob };
+        //     struct range
+        //     {
+        //         const float min = 0.;
+        //         const float max = 1.2;
+        //         const float init = .6;
+        //     };
+
+        //     float value;
+        // } lowpassQ, highpassQ, bandpassQ ;
 
         struct tog
         {
@@ -77,9 +119,14 @@ struct ParametricEq
         } audio;
     } outputs;
 
+    /* ********************************************************************************
+        We leave most of the work to the DSP library. There seem to be some issue with this approach.
+        Some noises appear in the output. Issue already encountered while working on more basic lowpass filter.
+       ******************************************************************************** */
+
     struct setup 
     { 
-        float rate; 
+        float rate {}; 
     };
 
     void prepare(setup s)
@@ -95,10 +142,10 @@ struct ParametricEq
 
         auto& out = outputs.audio;
 
-        /*
-            Since DSPFilters functions modify the samples in-place, 
-            we first copy the input into the output and then process the output samples directly.
-        */
+        
+        //  Since DSPFilters functions modify the samples in-place, 
+        //  we first copy the input into the output and then process the output samples directly.
+        
         for(auto i = 0; i < channels; ++i)
         {
             auto& in_samp  = in.samples[i];
@@ -112,10 +159,11 @@ struct ParametricEq
         //Lowpass filter work
         if(inputs.lowpassToggle.value)
         {
-            Dsp::SimpleFilter<Dsp::RBJ::LowPass, channels> lowpass_filter;
-            lowpass_filter.setup (  rate,                           // sample rate
-                                    inputs.lowpassCutoffFreq.value,// cutoff frequency
-                                    inputs.lowpassQ.value);        // quality factor
+            constexpr auto maxOrder = std::decay_t<decltype(inputs.lowpassOrder)>::maxOrder;
+            Dsp::SimpleFilter<Dsp::Butterworth::LowPass<maxOrder>, channels> lowpass_filter;
+            lowpass_filter.setup (  inputs.lowpassOrder.value,      // order value
+                                    rate,                           // sample rate
+                                    inputs.lowpassCutoffFreq.value);// cutoff frequency
 
             lowpass_filter.process (N, out.samples);
         }
@@ -123,25 +171,27 @@ struct ParametricEq
         //Highpass filter work
         if(inputs.highpassToggle.value)
         {
-            Dsp::SimpleFilter<Dsp::RBJ::HighPass, channels> highpass_filter;
-            highpass_filter.setup (  rate,                           // sample rate
-                                    inputs.highpassCutoffFreq.value,// cutoff frequency
-                                    inputs.highpassQ.value);        // quality factor
+            constexpr auto maxOrder = std::decay_t<decltype(inputs.highpassOrder)>::maxOrder;
+            Dsp::SimpleFilter<Dsp::Butterworth::HighPass<maxOrder>, channels> highpass_filter;
+            highpass_filter.setup ( inputs.highpassOrder.value,      // order value
+                                    rate,                           // sample rate
+                                    inputs.highpassCutoffFreq.value);// cutoff frequency
 
             highpass_filter.process (N, out.samples);
         }
         //Bandpass filter work
         if(inputs.bandpassToggle.value)
         {
-            Dsp::SimpleFilter<Dsp::RBJ::BandPass1, channels> bandpass_filter;
-            bandpass_filter.setup (  rate,                           // sample rate
-                                    inputs.bandpassCutoffFreq.value,// cutoff frequency
-                                    inputs.bandpassQ.value);        // quality factor
+            constexpr auto maxOrder = std::decay_t<decltype(inputs.bandpassOrder)>::maxOrder;
+            Dsp::SimpleFilter<Dsp::Butterworth::BandPass<maxOrder>, channels> bandpass_filter;
+            bandpass_filter.setup ( inputs.bandpassOrder.value,      // order value
+                                    rate,                            // sample rate
+                                    inputs.bandpassCenterFreq.value, // center frequency
+                                    inputs.bandpassBandWidth.value);
 
             bandpass_filter.process (N, out.samples);
         }
     }
-
 
     // ********************************************************************************
     //                              UI Part of the object
@@ -210,8 +260,9 @@ struct ParametricEq
                 return d;
             }
 
+            decltype(&ins::lowpassOrder) order_widget = &ins::lowpassOrder;
             decltype(&ins::lowpassCutoffFreq) cutoff_freq_widget = &ins::lowpassCutoffFreq;
-            decltype(&ins::lowpassQ) Q_widget = &ins::lowpassQ;
+            //decltype(&ins::lowpassQ) Q_widget = &ins::lowpassQ;
             decltype(&ins::lowpassToggle) toggle_widget = &ins::lowpassToggle;
         } lowpass;
 
@@ -236,15 +287,15 @@ struct ParametricEq
                 } d{};
                 return d;
             }
-
+            decltype(&ins::highpassOrder) order_widget = &ins::highpassOrder;
             decltype(&ins::highpassCutoffFreq) cutoff_freq_widget = &ins::highpassCutoffFreq;
-            decltype(&ins::highpassQ) Q_widget = &ins::highpassQ;
+            //decltype(&ins::highpassQ) Q_widget = &ins::highpassQ;
             decltype(&ins::highpassToggle) toggle_widget = &ins::highpassToggle;
         } highpass;
         struct // Bandpass Filter layout
         {
             static constexpr auto width() { return globalWidth/filtersNb; }
-            static constexpr auto height() { return globalHeight/3; }
+            static constexpr auto height() { return globalHeight/2; }
             const char* f1 = "Bandpass";
             static constexpr auto layout()
             {
@@ -262,9 +313,10 @@ struct ParametricEq
                 } d{};
                 return d;
             }
-
-            decltype(&ins::bandpassCutoffFreq) cutoff_freq_widget = &ins::bandpassCutoffFreq;
-            decltype(&ins::bandpassQ) Q_widget = &ins::bandpassQ;
+            decltype(&ins::bandpassOrder) order_widget = &ins::bandpassOrder;
+            decltype(&ins::bandpassCenterFreq) center_freq_widget = &ins::bandpassCenterFreq;
+            decltype(&ins::bandpassBandWidth) band_width_widget = &ins::bandpassBandWidth;
+            //decltype(&ins::bandpassQ) Q_widget = &ins::bandpassQ;
             decltype(&ins::bandpassToggle) toggle_widget = &ins::bandpassToggle;
         } bandpass;
     };
