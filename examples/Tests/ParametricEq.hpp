@@ -15,7 +15,9 @@ struct ParametricEq
     static constexpr auto c_name() { return "ngry_parameq"; }
     static constexpr auto uuid() { return "ec972d12-edba-4a9c-9736-9176efad17e3"; }
 
-
+    // ********************************************************************************
+    //                              Structural Part of the object
+    // ********************************************************************************
     struct ins
     {
         struct 
@@ -38,7 +40,23 @@ struct ParametricEq
             };
 
             float value;
-        } lowpassCutoffFreq, highpassCutoffFreq;//, bandpassCutoffFreq ; 
+        } lowpassCutoffFreq, highpassCutoffFreq, lowshelfCutoffFreq, highshelfCutoffFreq;
+
+        struct 
+        {
+            static constexpr auto name() { return "Gain"; }
+            enum widget { knob };
+
+            struct range
+            {
+                const float min = -120.;
+                const float max = 120.;
+                const float init = 0;
+            };
+
+            float value;
+        } lowshelfGain, highshelfGain;
+         
 
         struct 
         {
@@ -48,11 +66,11 @@ struct ParametricEq
             {
                 const float min = 0.;
                 const float max = 22000.;
-                const float init = 0.;
+                const float init = 10000.;
             };
 
             float value;
-        } bandpassCenterFreq;
+        } bandpassCenterFreq, bandstopCenterFreq;
 
         struct 
         {
@@ -61,12 +79,12 @@ struct ParametricEq
             struct range
             {
                 const float min = 0.;
-                const float max = 1000.;
+                const float max = 5000.;
                 const float init = 100.;
             };
 
             float value;
-        } bandpassBandWidth;
+        } bandpassBandWidth, bandstopBandWidth;
 
         struct order
         {
@@ -79,7 +97,9 @@ struct ParametricEq
                 const int init = 1;
             };
             int value;
-        } lowpassOrder, highpassOrder, bandpassOrder;
+        } lowpassOrder, highpassOrder, bandpassOrder, bandstopOrder, lowshelfOrder, highshelfOrder;
+
+        // No Q factor with Butterworth filters
         // struct 
         // {
         //     static constexpr auto name() { return "Q"; }
@@ -87,8 +107,8 @@ struct ParametricEq
         //     struct range
         //     {
         //         const float min = 0.;
-        //         const float max = 1.2;
-        //         const float init = .6;
+        //         const float max = 10.;
+        //         const float init = .71;
         //     };
 
         //     float value;
@@ -105,7 +125,7 @@ struct ParametricEq
             };
             bool value;
             static constexpr auto name() { return "Apply filter"; }
-        } lowpassToggle, highpassToggle, bandpassToggle;
+        } lowpassToggle, highpassToggle, bandpassToggle, bandstopToggle, lowshelfToggle, highshelfToggle;
 
     } inputs;   
 
@@ -119,11 +139,13 @@ struct ParametricEq
         } audio;
     } outputs;
 
+
+    // ********************************************************************************
+    //                              Working Part of the object
     /* ********************************************************************************
         We leave most of the work to the DSP library. There seem to be some issue with this approach.
         Some noises appear in the output. Issue already encountered while working on more basic lowpass filter.
        ******************************************************************************** */
-
     struct setup 
     { 
         float rate {}; 
@@ -132,6 +154,8 @@ struct ParametricEq
     void prepare(setup s)
     {
         inputs.audio.sampleRate = s.rate;
+        inputs.lowpassCutoffFreq.value = 15000.;
+        inputs.highpassCutoffFreq.value = 75.;
     }
 
     void operator()(int N)
@@ -187,9 +211,47 @@ struct ParametricEq
             bandpass_filter.setup ( inputs.bandpassOrder.value,      // order value
                                     rate,                            // sample rate
                                     inputs.bandpassCenterFreq.value, // center frequency
-                                    inputs.bandpassBandWidth.value);
+                                    inputs.bandpassBandWidth.value); // frequency band width
 
             bandpass_filter.process (N, out.samples);
+        }
+
+        //Bandstop filter work
+        if(inputs.bandstopToggle.value)
+        {
+            constexpr auto maxOrder = std::decay_t<decltype(inputs.bandstopOrder)>::maxOrder;
+            Dsp::SimpleFilter<Dsp::Butterworth::BandStop<maxOrder>, channels> bandstop_filter;
+            bandstop_filter.setup ( inputs.bandstopOrder.value,      // order value
+                                    rate,                            // sample rate
+                                    inputs.bandstopCenterFreq.value, // center frequency
+                                    inputs.bandstopBandWidth.value); // frequency band width
+
+            bandstop_filter.process (N, out.samples);
+        }
+
+        //Lowshelf filter work
+        if(inputs.lowshelfToggle.value)
+        {
+            constexpr auto maxOrder = std::decay_t<decltype(inputs.lowshelfOrder)>::maxOrder;
+            Dsp::SimpleFilter<Dsp::Butterworth::LowShelf<maxOrder>, channels> lowshelf_filter;
+            lowshelf_filter.setup ( inputs.lowshelfOrder.value,      // order value
+                                    rate,                            // sample rate
+                                    inputs.lowshelfCutoffFreq.value, // cutoff frequency
+                                    inputs.lowshelfGain.value);      // gain in db 
+
+            lowshelf_filter.process (N, out.samples);
+        }
+        //Highshelf filter work
+        if(inputs.highshelfToggle.value)
+        {
+            constexpr auto maxOrder = std::decay_t<decltype(inputs.highshelfOrder)>::maxOrder;
+            Dsp::SimpleFilter<Dsp::Butterworth::HighShelf<maxOrder>, channels> highshelf_filter;
+            highshelf_filter.setup ( inputs.highshelfOrder.value,      // order value
+                                    rate,                            // sample rate
+                                    inputs.highshelfCutoffFreq.value, // cutoff frequency
+                                    inputs.highshelfGain.value);      // gain in db 
+
+            highshelf_filter.process (N, out.samples);
         }
     }
 
@@ -199,9 +261,9 @@ struct ParametricEq
 
     struct ui // defines the main layout
     {
-        static constexpr int globalWidth = 600;
+        static constexpr int globalWidth = 1000;
         static constexpr int globalHeight = 500;
-        static constexpr auto filtersNb = 3.5;
+        static constexpr auto filtersNb = 6.5;
 
         static constexpr auto name() { return "Main"; }
         static constexpr auto width() { return globalWidth; }
@@ -234,7 +296,7 @@ struct ParametricEq
                 } d{};
                 return d;
             }
-            static constexpr auto width() { return 10; }
+            static constexpr auto width() { return 5; }
             static constexpr auto height() { return 50; }
         } spacing1;
 
@@ -319,6 +381,90 @@ struct ParametricEq
             //decltype(&ins::bandpassQ) Q_widget = &ins::bandpassQ;
             decltype(&ins::bandpassToggle) toggle_widget = &ins::bandpassToggle;
         } bandpass;
+
+        struct // Bandstop Filter layout
+        {
+            static constexpr auto width() { return globalWidth/filtersNb; }
+            static constexpr auto height() { return globalHeight/2; }
+            const char* f1 = "Bandstop";
+            static constexpr auto layout()
+            {
+                enum
+                {
+                    vbox
+                } d{};
+                return d;
+            }
+            static constexpr auto background()
+            {
+                enum
+                {
+                    dark
+                } d{};
+                return d;
+            }
+            decltype(&ins::bandstopOrder) order_widget = &ins::bandstopOrder;
+            decltype(&ins::bandstopCenterFreq) center_freq_widget = &ins::bandstopCenterFreq;
+            decltype(&ins::bandstopBandWidth) band_width_widget = &ins::bandstopBandWidth;
+            //decltype(&ins::bandstopQ) Q_widget = &ins::bandstopQ;
+            decltype(&ins::bandstopToggle) toggle_widget = &ins::bandstopToggle;
+        } bandstop;
+
+        struct // Lowshelf filter layout
+        {
+            static constexpr auto width() { return globalWidth/filtersNb; }
+            static constexpr auto height() { return globalHeight/3; }
+            const char* f1 = "Lowshelf";
+            static constexpr auto layout()
+            {
+                enum
+                {
+                    vbox
+                } d{};
+                return d;
+            }
+            static constexpr auto background()
+            {
+                enum
+                {
+                    dark
+                } d{};
+                return d;
+            }
+            decltype(&ins::lowshelfOrder) order_widget = &ins::lowshelfOrder;
+            decltype(&ins::lowshelfCutoffFreq) cutoff_freq_widget = &ins::lowshelfCutoffFreq;
+            decltype(&ins::lowshelfGain) gain_widget = &ins::lowshelfGain;
+            //decltype(&ins::lowshelfQ) Q_widget = &ins::lowshelfQ;
+            decltype(&ins::lowshelfToggle) toggle_widget = &ins::lowshelfToggle;
+        } lowshelf;
+
+        struct // Highshelf filter layout
+        {
+            static constexpr auto width() { return globalWidth/filtersNb; }
+            static constexpr auto height() { return globalHeight/3; }
+            const char* f1 = "Highshelf";
+            static constexpr auto layout()
+            {
+                enum
+                {
+                    vbox
+                } d{};
+                return d;
+            }
+            static constexpr auto background()
+            {
+                enum
+                {
+                    dark
+                } d{};
+                return d;
+            }
+            decltype(&ins::highshelfOrder) order_widget = &ins::highshelfOrder;
+            decltype(&ins::highshelfCutoffFreq) cutoff_freq_widget = &ins::highshelfCutoffFreq;
+            decltype(&ins::highshelfGain) gain_widget = &ins::highshelfGain;
+            //decltype(&ins::highshelfQ) Q_widget = &ins::highshelfQ;
+            decltype(&ins::highshelfToggle) toggle_widget = &ins::highshelfToggle;
+        } highshelf;
     };
 
 };
