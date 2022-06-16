@@ -294,18 +294,23 @@ struct ParametricEq
 
     struct ui // defines the main layout
     {
-        static constexpr int globalWidth = 1200;
-        static constexpr int globalHeight = 700;
+        static constexpr int mainWidth = 1200;
+        static constexpr int mainHeight = 900;
+
+        static constexpr int globalWidth = mainWidth;
+        static constexpr int globalHeight = mainHeight/2 - 100;
+
         static constexpr auto filtersNb = 7.5;
 
         static constexpr auto name() { return "Main"; }
-        static constexpr auto width() { return globalWidth; }
-        static constexpr auto height() { return globalHeight; }
+        static constexpr auto width() { return mainWidth; }
+        static constexpr auto height() { return mainHeight; }
+
         static constexpr auto layout() 
         {
             enum
             {
-                hbox //each sub-layout will be placed horizontally in the main layout
+                vbox //each sub-layout will be placed vertically in the main layout
             } d{};
             return d;
         }
@@ -318,216 +323,261 @@ struct ParametricEq
             } d{};
             return d;
         }
+        struct
+        {            
+            static constexpr auto name() { return "Equalizer Display"; }
+             static constexpr auto width() { return globalWidth; }
+            static constexpr auto height() { return mainHeight - globalHeight; }
+            static constexpr auto layout() 
+            {
+                enum
+                {
+                    hbox //each sub-layout will be placed horizontally in the main layout
+                } d{};
+                return d;
+            }
 
-        // struct
-        // {
-        //     static constexpr auto layout()
-        //     {
-        //         enum
-        //         {
-        //             spacing
-        //         } d{};
-        //         return d;
-        //     }
-        //     static constexpr auto width() { return 2; }
-        //     static constexpr auto height() { return 50; }
-        // } spacing1;
-
-        struct // Lowpass Filter layout
+            static constexpr auto background() //defines color of the background
+            {
+                enum
+                {
+                    light
+                } d{};
+                return d;
+            }
+        } display;
+        struct
         {
-            static constexpr auto width() { return globalWidth/filtersNb; }
-            static constexpr auto height() { return globalHeight/3; }
-            const char* f1 = "Butterworth Lowpass";
-            static constexpr auto layout()
+            static constexpr auto name() { return "Filters Controls"; }
+            static constexpr auto layout() 
             {
                 enum
                 {
-                    vbox
-                } d{};
-                return d;
-            }
-            static constexpr auto background()
-            {
-                enum
-                {
-                    dark
+                    hbox //each sub-layout will be placed horizontally in the main layout
                 } d{};
                 return d;
             }
 
-            decltype(&ins::lowpassToggle) toggle_widget = &ins::lowpassToggle;
-            decltype(&ins::lowpassOrder) order_widget = &ins::lowpassOrder;
-            decltype(&ins::lowpassCutoffFreq) cutoff_freq_widget = &ins::lowpassCutoffFreq;
-            //decltype(&ins::lowpassQ) Q_widget = &ins::lowpassQ;
-        } lowpass;
+            static constexpr auto background() //defines color of the background
+            {
+                enum
+                {
+                    darker
+                } d{};
+                return d;
+            }
 
-        struct // Highpass filter layout
-        {
-            static constexpr auto width() { return globalWidth/filtersNb; }
-            static constexpr auto height() { return globalHeight/3; }
-            const char* f1 = "Butterworth Highpass";
-            static constexpr auto layout()
-            {
-                enum
-                {
-                    vbox
-                } d{};
-                return d;
-            }
-            static constexpr auto background()
-            {
-                enum
-                {
-                    dark
-                } d{};
-                return d;
-            }
-            decltype(&ins::highpassToggle) toggle_widget = &ins::highpassToggle;
-            decltype(&ins::highpassOrder) order_widget = &ins::highpassOrder;
-            decltype(&ins::highpassCutoffFreq) cutoff_freq_widget = &ins::highpassCutoffFreq;
-            //decltype(&ins::highpassQ) Q_widget = &ins::highpassQ;
-        } highpass;
-        struct // Bandpass Filter layout
-        {
-            static constexpr auto width() { return globalWidth/filtersNb; }
-            static constexpr auto height() { return globalHeight/2; }
-            const char* f1 = "Butterworth Bandpass";
-            static constexpr auto layout()
-            {
-                enum
-                {
-                    vbox
-                } d{};
-                return d;
-            }
-            static constexpr auto background()
-            {
-                enum
-                {
-                    dark
-                } d{};
-                return d;
-            }
-            decltype(&ins::bandpassToggle) toggle_widget = &ins::bandpassToggle;
-            decltype(&ins::bandpassOrder) order_widget = &ins::bandpassOrder;
-            decltype(&ins::bandpassCenterFreq) center_freq_widget = &ins::bandpassCenterFreq;
-            decltype(&ins::bandpassBandWidth) band_width_widget = &ins::bandpassBandWidth;
-            //decltype(&ins::bandpassQ) Q_widget = &ins::bandpassQ;
-        } bandpass;
+            // struct
+            // {
+            //     static constexpr auto layout()
+            //     {
+            //         enum
+            //         {
+            //             spacing
+            //         } d{};
+            //         return d;
+            //     }
+            //     static constexpr auto width() { return 2; }
+            //     static constexpr auto height() { return 50; }
+            // } spacing1;
 
-        struct // Bandstop Filter layout
-        {
-            static constexpr auto width() { return globalWidth/filtersNb; }
-            static constexpr auto height() { return globalHeight/2; }
-            const char* f1 = "Butterworth Bandstop";
-            static constexpr auto layout()
+            struct // Lowpass Filter layout
             {
-                enum
+                static constexpr auto width() { return globalWidth/filtersNb; }
+                static constexpr auto height() { return globalHeight; }
+                const char* f1 = "Butterworth Lowpass";
+                static constexpr auto layout()
                 {
-                    vbox
-                } d{};
-                return d;
-            }
-            static constexpr auto background()
-            {
-                enum
+                    enum
+                    {
+                        vbox
+                    } d{};
+                    return d;
+                }
+                static constexpr auto background()
                 {
-                    dark
-                } d{};
-                return d;
-            }
-            decltype(&ins::bandstopToggle) toggle_widget = &ins::bandstopToggle;
-            decltype(&ins::bandstopOrder) order_widget = &ins::bandstopOrder;
-            decltype(&ins::bandstopCenterFreq) center_freq_widget = &ins::bandstopCenterFreq;
-            decltype(&ins::bandstopBandWidth) band_width_widget = &ins::bandstopBandWidth;
-            //decltype(&ins::bandstopQ) Q_widget = &ins::bandstopQ;
-        } bandstop;
+                    enum
+                    {
+                        dark
+                    } d{};
+                    return d;
+                }
 
-        struct // Lowshelf filter layout
-        {
-            static constexpr auto width() { return globalWidth/filtersNb; }
-            static constexpr auto height() { return globalHeight/3; }
-            const char* f1 = "Butterworth Lowshelf";
-            static constexpr auto layout()
-            {
-                enum
-                {
-                    vbox
-                } d{};
-                return d;
-            }
-            static constexpr auto background()
-            {
-                enum
-                {
-                    dark
-                } d{};
-                return d;
-            }
-            decltype(&ins::lowshelfToggle) toggle_widget = &ins::lowshelfToggle;
-            decltype(&ins::lowshelfOrder) order_widget = &ins::lowshelfOrder;
-            decltype(&ins::lowshelfCutoffFreq) cutoff_freq_widget = &ins::lowshelfCutoffFreq;
-            decltype(&ins::lowshelfGain) gain_widget = &ins::lowshelfGain;
-            //decltype(&ins::lowshelfQ) Q_widget = &ins::lowshelfQ;
-        } lowshelf;
+                decltype(&ins::lowpassToggle) toggle_widget = &ins::lowpassToggle;
+                decltype(&ins::lowpassOrder) order_widget = &ins::lowpassOrder;
+                decltype(&ins::lowpassCutoffFreq) cutoff_freq_widget = &ins::lowpassCutoffFreq;
+                //decltype(&ins::lowpassQ) Q_widget = &ins::lowpassQ;
+            } lowpass;
 
-        struct // Highshelf filter layout
-        {
-            static constexpr auto width() { return globalWidth/filtersNb; }
-            static constexpr auto height() { return globalHeight/3; }
-            const char* f1 = "Butterworth Highshelf";
-            static constexpr auto layout()
+            struct // Highpass filter layout
             {
-                enum
+                static constexpr auto width() { return globalWidth/filtersNb; }
+                static constexpr auto height() { return globalHeight; }
+                const char* f1 = "Butterworth Highpass";
+                static constexpr auto layout()
                 {
-                    vbox
-                } d{};
-                return d;
-            }
-            static constexpr auto background()
+                    enum
+                    {
+                        vbox
+                    } d{};
+                    return d;
+                }
+                static constexpr auto background()
+                {
+                    enum
+                    {
+                        dark
+                    } d{};
+                    return d;
+                }
+                decltype(&ins::highpassToggle) toggle_widget = &ins::highpassToggle;
+                decltype(&ins::highpassOrder) order_widget = &ins::highpassOrder;
+                decltype(&ins::highpassCutoffFreq) cutoff_freq_widget = &ins::highpassCutoffFreq;
+                //decltype(&ins::highpassQ) Q_widget = &ins::highpassQ;
+            } highpass;
+            struct // Bandpass Filter layout
             {
-                enum
+                static constexpr auto width() { return globalWidth/filtersNb; }
+                static constexpr auto height() { return globalHeight; }
+                const char* f1 = "Butterworth Bandpass";
+                static constexpr auto layout()
                 {
-                    dark
-                } d{};
-                return d;
-            }
-            decltype(&ins::highshelfToggle) toggle_widget = &ins::highshelfToggle;
-            decltype(&ins::highshelfOrder) order_widget = &ins::highshelfOrder;
-            decltype(&ins::highshelfCutoffFreq) cutoff_freq_widget = &ins::highshelfCutoffFreq;
-            decltype(&ins::highshelfGain) gain_widget = &ins::highshelfGain;
-            //decltype(&ins::highshelfQ) Q_widget = &ins::highshelfQ;
-        } highshelf;
+                    enum
+                    {
+                        vbox
+                    } d{};
+                    return d;
+                }
+                static constexpr auto background()
+                {
+                    enum
+                    {
+                        dark
+                    } d{};
+                    return d;
+                }
+                decltype(&ins::bandpassToggle) toggle_widget = &ins::bandpassToggle;
+                decltype(&ins::bandpassOrder) order_widget = &ins::bandpassOrder;
+                decltype(&ins::bandpassCenterFreq) center_freq_widget = &ins::bandpassCenterFreq;
+                decltype(&ins::bandpassBandWidth) band_width_widget = &ins::bandpassBandWidth;
+                //decltype(&ins::bandpassQ) Q_widget = &ins::bandpassQ;
+            } bandpass;
 
-        struct // Bandshelf filter layout
-        {
-            static constexpr auto width() { return globalWidth/filtersNb; }
-            static constexpr auto height() { return globalHeight/3; }
-            const char* f1 = "ChebyshevI Bandshelf";
-            static constexpr auto layout()
+            struct // Bandstop Filter layout
             {
-                enum
+                static constexpr auto width() { return globalWidth/filtersNb; }
+                static constexpr auto height() { return globalHeight; }
+                const char* f1 = "Butterworth Bandstop";
+                static constexpr auto layout()
                 {
-                    vbox
-                } d{};
-                return d;
-            }
-            static constexpr auto background()
+                    enum
+                    {
+                        vbox
+                    } d{};
+                    return d;
+                }
+                static constexpr auto background()
+                {
+                    enum
+                    {
+                        dark
+                    } d{};
+                    return d;
+                }
+                decltype(&ins::bandstopToggle) toggle_widget = &ins::bandstopToggle;
+                decltype(&ins::bandstopOrder) order_widget = &ins::bandstopOrder;
+                decltype(&ins::bandstopCenterFreq) center_freq_widget = &ins::bandstopCenterFreq;
+                decltype(&ins::bandstopBandWidth) band_width_widget = &ins::bandstopBandWidth;
+                //decltype(&ins::bandstopQ) Q_widget = &ins::bandstopQ;
+            } bandstop;
+
+            struct // Lowshelf filter layout
             {
-                enum
+                static constexpr auto width() { return globalWidth/filtersNb; }
+                static constexpr auto height() { return globalHeight; }
+                const char* f1 = "Butterworth Lowshelf";
+                static constexpr auto layout()
                 {
-                    dark
-                } d{};
-                return d;
-            }
-            decltype(&ins::bandshelfToggle) toggle_widget = &ins::bandshelfToggle;
-            decltype(&ins::bandshelfOrder) order_widget = &ins::bandshelfOrder;
-            decltype(&ins::bandshelfCenterFreq) center_freq_widget = &ins::bandshelfCenterFreq;
-            decltype(&ins::bandshelfBandWidth) band_width_widget = &ins::bandshelfBandWidth;
-            decltype(&ins::bandshelfGain) gain_widget = &ins::bandshelfGain;
-            decltype(&ins::bandshelfRipple) ripple_widget = &ins::bandshelfRipple;
-            //decltype(&ins::bandshelfQ) Q_widget = &ins::bandshelfQ;
-        } bandshelf;
+                    enum
+                    {
+                        vbox
+                    } d{};
+                    return d;
+                }
+                static constexpr auto background()
+                {
+                    enum
+                    {
+                        dark
+                    } d{};
+                    return d;
+                }
+                decltype(&ins::lowshelfToggle) toggle_widget = &ins::lowshelfToggle;
+                decltype(&ins::lowshelfOrder) order_widget = &ins::lowshelfOrder;
+                decltype(&ins::lowshelfCutoffFreq) cutoff_freq_widget = &ins::lowshelfCutoffFreq;
+                decltype(&ins::lowshelfGain) gain_widget = &ins::lowshelfGain;
+                //decltype(&ins::lowshelfQ) Q_widget = &ins::lowshelfQ;
+            } lowshelf;
+
+            struct // Highshelf filter layout
+            {
+                static constexpr auto width() { return globalWidth/filtersNb; }
+                static constexpr auto height() { return globalHeight; }
+                const char* f1 = "Butterworth Highshelf";
+                static constexpr auto layout()
+                {
+                    enum
+                    {
+                        vbox
+                    } d{};
+                    return d;
+                }
+                static constexpr auto background()
+                {
+                    enum
+                    {
+                        dark
+                    } d{};
+                    return d;
+                }
+                decltype(&ins::highshelfToggle) toggle_widget = &ins::highshelfToggle;
+                decltype(&ins::highshelfOrder) order_widget = &ins::highshelfOrder;
+                decltype(&ins::highshelfCutoffFreq) cutoff_freq_widget = &ins::highshelfCutoffFreq;
+                decltype(&ins::highshelfGain) gain_widget = &ins::highshelfGain;
+                //decltype(&ins::highshelfQ) Q_widget = &ins::highshelfQ;
+            } highshelf;
+
+            struct // Bandshelf filter layout
+            {
+                static constexpr auto width() { return globalWidth/filtersNb; }
+                static constexpr auto height() { return globalHeight; }
+                const char* f1 = "ChebyshevI Bandshelf";
+                static constexpr auto layout()
+                {
+                    enum
+                    {
+                        vbox
+                    } d{};
+                    return d;
+                }
+                static constexpr auto background()
+                {
+                    enum
+                    {
+                        dark
+                    } d{};
+                    return d;
+                }
+                decltype(&ins::bandshelfToggle) toggle_widget = &ins::bandshelfToggle;
+                decltype(&ins::bandshelfOrder) order_widget = &ins::bandshelfOrder;
+                decltype(&ins::bandshelfCenterFreq) center_freq_widget = &ins::bandshelfCenterFreq;
+                decltype(&ins::bandshelfBandWidth) band_width_widget = &ins::bandshelfBandWidth;
+                decltype(&ins::bandshelfGain) gain_widget = &ins::bandshelfGain;
+                decltype(&ins::bandshelfRipple) ripple_widget = &ins::bandshelfRipple;
+                //decltype(&ins::bandshelfQ) Q_widget = &ins::bandshelfQ;
+            } bandshelf;
+        } filters;
+
     };
 
 };
