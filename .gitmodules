@@ -85,3 +85,5 @@
 [submodule "src/addons/ThreadTest"]
 	path = src/addons/ThreadTest
 	url = git@github.com:grybouilli/score-avnd-thread-test.git
+[submodule "VAE_synth"]
+	url = https://github.com/grybouilli/VAE_Synth.git
