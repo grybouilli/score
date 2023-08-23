@@ -79,9 +79,9 @@
 [submodule "3rdparty/mimalloc"]
 	path = 3rdparty/mimalloc
 	url = https://github.com/microsoft/mimalloc
-[submodule "src/addons/basic_model_addon"]
-	path = src/addons/basic_model_addon
-	url = https://github.com/grybouilli/basic_model_addon
 [submodule "src/addons/VAE_synth"]
 	path = src/addons/VAE_synth
 	url = git@github.com:grybouilli/VAE_Synth.git
+[submodule "src/addons/ThreadTest"]
+	path = src/addons/ThreadTest
+	url = git@github.com:grybouilli/score-avnd-thread-test.git
